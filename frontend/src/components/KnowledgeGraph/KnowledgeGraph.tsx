@@ -89,7 +89,10 @@ export function KnowledgeGraph({ graph, loading, onRefresh, onOpenNote }: Knowle
           placeholder="Find a node"
           aria-label="Find a node in the knowledge graph"
         />
-        <p>Hover to isolate connections. Click a node to open the note.</p>
+        <p className="knowledge-graph__hint">
+          <span className="knowledge-graph__hint-pointer">Hover to isolate connections. Click a node to open the note.</span>
+          <span className="knowledge-graph__hint-touch">Tap a node to open the note.</span>
+        </p>
       </div>
 
       <div className="knowledge-graph__canvas">
@@ -132,8 +135,8 @@ export function KnowledgeGraph({ graph, loading, onRefresh, onOpenNote }: Knowle
                     role="button"
                     tabIndex={0}
                     aria-label={`Open ${node.title}`}
-                    onMouseEnter={() => setHoveredId(node.id)}
-                    onMouseLeave={() => setHoveredId(null)}
+                    onPointerEnter={() => setHoveredId(node.id)}
+                    onPointerLeave={() => setHoveredId(null)}
                     onFocus={() => setHoveredId(node.id)}
                     onBlur={() => setHoveredId(null)}
                     onClick={() => onOpenNote(node.id)}
@@ -141,7 +144,8 @@ export function KnowledgeGraph({ graph, loading, onRefresh, onOpenNote }: Knowle
                       if (event.key === "Enter" || event.key === " ") onOpenNote(node.id);
                     }}
                   >
-                    <circle r={radius} />
+                    <circle className="knowledge-graph__node-hit" r={radius + 15} />
+                    <circle className="knowledge-graph__node-dot" r={radius} />
                     <text x={radius + 7} y="4">{shortenTitle(node.title)}</text>
                     <title>{node.title}{node.tags.length ? ` · ${node.tags.join(", ")}` : ""}</title>
                   </g>
