@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.schemas import BacklinkRead, NoteCreate, NoteRead, NoteUpdate
+from app.schemas import BacklinkRead, KnowledgeGraphRead, NoteCreate, NoteRead, NoteUpdate
 from app.services import notes as note_service
 
 router = APIRouter(prefix="/api/notes", tags=["notes"])
@@ -20,6 +20,11 @@ def list_notes(
 @router.post("", response_model=NoteRead, status_code=status.HTTP_201_CREATED)
 def create_note(payload: NoteCreate, db: Session = Depends(get_db)) -> NoteRead:
     return note_service.create_note(db, payload)
+
+
+@router.get("/graph", response_model=KnowledgeGraphRead)
+def knowledge_graph(db: Session = Depends(get_db)) -> KnowledgeGraphRead:
+    return note_service.get_knowledge_graph(db)
 
 
 @router.get("/{note_id}", response_model=NoteRead)
