@@ -1,0 +1,139 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SOURCE_DIR="${CORTEX_SOURCE_DIR:-/srv/apps/cortex/source}"
+MAIN_ENV="${CORTEX_MAIN_ENV:-/etc/zakkos/secrets/cortex.env}"
+DEV_ENV="${CORTEX_DEV_ENV:-/etc/zakkos/secrets/cortex-dev.env}"
+MAIN_PROJECT="cortex-main"
+DEV_PROJECT="cortex-dev"
+
+fail() {
+  printf '%s\n' "$1" >&2
+  exit 1
+}
+
+require_file() {
+  [[ -r "$1" ]] || fail "Cannot read $1"
+}
+
+require_repo() {
+  [[ -d "$SOURCE_DIR/.git" ]] || fail "Cortex source repo not found at $SOURCE_DIR"
+}
+
+compose() {
+  local project="$1"
+  local env_file="$2"
+  shift 2
+  docker compose -p "$project" --env-file "$env_file" "$@"
+}
+
+stop_project() {
+  local project="$1"
+  local env_file="$2"
+  if [[ -r "$env_file" ]]; then
+    compose "$project" "$env_file" down
+  fi
+}
+
+switch_branch() {
+  local branch="$1"
+  cd "$SOURCE_DIR"
+  git fetch origin "$branch"
+  git switch "$branch"
+  git pull --ff-only origin "$branch"
+}
+
+current_branch() {
+  git -C "$SOURCE_DIR" branch --show-current
+}
+
+init_dev() {
+  command -v openssl >/dev/null || fail "openssl is required"
+  sudo install -d -m 750 -o root -g "$(id -gn)" /etc/zakkos/secrets
+  sudo install -d -m 775 -o "$(id -un)" -g "$(id -gn)" /srv/apps/cortex-dev/data
+
+  if sudo test -f "$DEV_ENV"; then
+    sudo chown root:"$(id -gn)" "$DEV_ENV"
+    sudo chmod 640 "$DEV_ENV"
+    printf 'Dev environment already exists at %s\n' "$DEV_ENV"
+    return
+  fi
+
+  local password
+  password="$(openssl rand -hex 24)"
+  printf 'POSTGRES_DB=cortex_dev\nPOSTGRES_USER=cortex_dev\nPOSTGRES_PASSWORD=%s\nCORTEX_DATA_DIR=/srv/apps/cortex-dev/data\n' "$password" | sudo tee "$DEV_ENV" >/dev/null
+  sudo chown root:"$(id -gn)" "$DEV_ENV"
+  sudo chmod 640 "$DEV_ENV"
+  printf 'Created isolated dev environment at %s\n' "$DEV_ENV"
+}
+
+start_main() {
+  require_file "$MAIN_ENV"
+  stop_project "$DEV_PROJECT" "$DEV_ENV"
+  switch_branch main
+  compose "$MAIN_PROJECT" "$MAIN_ENV" up -d --build
+  printf 'Cortex main is running at http://127.0.0.1:3100/notes/\n'
+}
+
+start_dev() {
+  require_file "$DEV_ENV"
+  stop_project "$MAIN_PROJECT" "$MAIN_ENV"
+  switch_branch dev
+  compose "$DEV_PROJECT" "$DEV_ENV" up -d --build
+  printf 'Cortex dev is running at http://127.0.0.1:3100/notes/\n'
+}
+
+run_dev_data() {
+  local command="$1"
+  require_file "$DEV_ENV"
+  [[ "$(current_branch)" == "dev" ]] || fail "Dev data commands only run while the source checkout is on the dev branch. Run: cortex dev"
+  compose "$DEV_PROJECT" "$DEV_ENV" up -d db
+  compose "$DEV_PROJECT" "$DEV_ENV" run --rm backend alembic upgrade head
+  compose "$DEV_PROJECT" "$DEV_ENV" run --rm -e CORTEX_DEV_TOOLS=1 backend python -m app.devdata "$command"
+}
+
+show_status() {
+  if [[ -r "$MAIN_ENV" ]]; then
+    printf 'main\n'
+    compose "$MAIN_PROJECT" "$MAIN_ENV" ps
+  fi
+  if [[ -r "$DEV_ENV" ]]; then
+    printf 'dev\n'
+    compose "$DEV_PROJECT" "$DEV_ENV" ps
+  fi
+}
+
+show_help() {
+  printf 'Usage: cortex <main|dev|seed|wipe|stop|status|init-dev>\n'
+}
+
+require_repo
+
+case "${1:-}" in
+  main)
+    start_main
+    ;;
+  dev)
+    start_dev
+    ;;
+  seed)
+    run_dev_data seed
+    ;;
+  wipe)
+    run_dev_data wipe
+    ;;
+  stop)
+    stop_project "$MAIN_PROJECT" "$MAIN_ENV"
+    stop_project "$DEV_PROJECT" "$DEV_ENV"
+    ;;
+  status)
+    show_status
+    ;;
+  init-dev)
+    init_dev
+    ;;
+  *)
+    show_help
+    exit 1
+    ;;
+esac

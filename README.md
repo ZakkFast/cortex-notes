@@ -62,6 +62,39 @@ Cortex follows Zakk OS service contract v1:
 
 TrashBox owns live state. The Git checkout is disposable. PostgreSQL data is stored beneath `/srv/apps/cortex/data` through `CORTEX_DATA_DIR`.
 
+## TrashBox main and dev workflow
+
+Install the checked-in helper once:
+
+```bash
+sudo install -m 755 scripts/cortex /usr/local/bin/cortex
+```
+
+Create the isolated dev environment once:
+
+```bash
+cortex init-dev
+```
+
+The regular commands are:
+
+```text
+cortex main
+cortex dev
+cortex seed
+cortex wipe
+cortex stop
+cortex status
+```
+
+`main` uses `/etc/zakkos/secrets/cortex.env`, the `cortex-main` Compose project, and `/srv/apps/cortex/data`.
+
+`dev` uses `/etc/zakkos/secrets/cortex-dev.env`, the `cortex-dev` Compose project, the `dev` Git branch, the `cortex_dev` PostgreSQL database, and `/srv/apps/cortex-dev/data`.
+
+`cortex seed` replaces the dev notes with 52 deterministic fake notes containing tags, wiki links, backlinks, graph connections, search text, and Trash fixtures. `cortex wipe` removes notes from the dev database while leaving application settings alone.
+
+Dev data commands have multiple guards: they require the source checkout to be on the `dev` branch, the dev env file, an explicit dev-tools flag, and a database named exactly `cortex_dev`. They refuse to run against the main `cortex` database.
+
 ## Tests
 
 Backend:
