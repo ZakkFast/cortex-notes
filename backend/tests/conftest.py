@@ -1,7 +1,6 @@
 import os
-from pathlib import Path
 
-os.environ["DATABASE_URL"] = "sqlite:///./test-cortex.db"
+os.environ["DATABASE_URL"] = "sqlite://"
 
 import pytest
 from fastapi.testclient import TestClient
@@ -16,7 +15,6 @@ def reset_database():
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
-    Path("test-cortex.db").unlink(missing_ok=True)
 
 
 @pytest.fixture
