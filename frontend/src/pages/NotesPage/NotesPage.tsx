@@ -32,8 +32,14 @@ export function NotesPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [accentColor, setAccentColor] = useState("#8b9cff");
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const draftRef = useRef<NoteDraft | null>(null);
   const lastSaved = useRef("");
   const toastId = useRef(0);
+
+  function setCurrentDraft(nextDraft: NoteDraft | null) {
+    draftRef.current = nextDraft;
+    setDraft(nextDraft);
+  }
 
   function addToast(message: string, tone: Toast["tone"] = "neutral") {
     const id = ++toastId.current;
@@ -49,7 +55,7 @@ export function NotesPage() {
       if (!keepSelection || !selected || !loaded.some((note) => note.id === selected.id)) {
         const first = loaded[0] ?? null;
         setSelected(first);
-        setDraft(first ? toDraft(first) : null);
+        setCurrentDraft(first ? toDraft(first) : null);
         lastSaved.current = first ? snapshot(toDraft(first)) : "";
       }
     } catch (error) {
@@ -85,16 +91,23 @@ export function NotesPage() {
     if (currentSnapshot === lastSaved.current) return;
 
     const noteId = selected.id;
+    const sentDraft = draft;
     setSaveState("saving");
     const timer = window.setTimeout(async () => {
       try {
-        const updated = await notesApi.update(noteId, draft);
+        const updated = await notesApi.update(noteId, sentDraft);
         setNotes((current) => current.map((note) => (note.id === updated.id ? updated : note)).sort((a, b) => b.updated_at.localeCompare(a.updated_at)));
         setSelected((current) => {
           if (current?.id !== noteId) return current;
-          setDraft(toDraft(updated));
-          lastSaved.current = snapshot(toDraft(updated));
-          setSaveState("saved");
+
+          const savedDraft = toDraft(updated);
+          lastSaved.current = snapshot(savedDraft);
+          if (draftRef.current && snapshot(draftRef.current) === currentSnapshot) {
+            setCurrentDraft(savedDraft);
+            setSaveState("saved");
+          } else {
+            setSaveState("saving");
+          }
           return updated;
         });
       } catch (error) {
@@ -112,7 +125,7 @@ export function NotesPage() {
 
   function selectNote(note: Note) {
     setSelected(note);
-    setDraft(toDraft(note));
+    setCurrentDraft(toDraft(note));
     lastSaved.current = snapshot(toDraft(note));
     setSaveState("idle");
     setMode("write");
@@ -138,7 +151,7 @@ export function NotesPage() {
       await notesApi.remove(selected.id);
       addToast(`Moved "${selected.title}" to Trash.`);
       setSelected(null);
-      setDraft(null);
+      setCurrentDraft(null);
       await loadNotes(search, trash, false);
     } catch (error) {
       addToast(error instanceof Error ? error.message : "Cortex could not move this note to Trash.", "error");
@@ -176,15 +189,16 @@ export function NotesPage() {
     await createNote(title);
   }
 
-  async function saveSettings(nextAccent: string) {
+  async function saveSettings(nextAccent: string): Promise<boolean> {
     try {
       const saved = await settingsApi.update(nextAccent);
       setAccentColor(saved.accent_color);
       document.documentElement.style.setProperty("--accent", saved.accent_color);
       addToast("Settings saved.");
+      return true;
     } catch (error) {
       addToast(error instanceof Error ? error.message : "Cortex could not save settings.", "error");
-      throw error;
+      return false;
     }
   }
 
@@ -203,7 +217,7 @@ export function NotesPage() {
           setTrash(nextTrash);
           setSearch("");
           setSelected(null);
-          setDraft(null);
+          setCurrentDraft(null);
         }}
         onOpenSettings={() => setSettingsOpen(true)}
       />
@@ -215,7 +229,7 @@ export function NotesPage() {
             deleted={selectedDeleted}
             mode={mode}
             saveState={saveState}
-            onDraftChange={setDraft}
+            onDraftChange={setCurrentDraft}
             onModeChange={setMode}
             onDelete={() => void deleteSelected()}
             onRestore={() => void restoreSelected()}
