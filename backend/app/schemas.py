@@ -33,6 +33,24 @@ class BacklinkRead(BaseModel):
     updated_at: datetime
 
 
+class GraphNodeRead(BaseModel):
+    id: str
+    title: str
+    tags: list[str]
+    updated_at: datetime
+    degree: int
+
+
+class GraphEdgeRead(BaseModel):
+    source: str
+    target: str
+
+
+class KnowledgeGraphRead(BaseModel):
+    nodes: list[GraphNodeRead]
+    edges: list[GraphEdgeRead]
+
+
 class SettingsRead(BaseModel):
     accent_color: str
 

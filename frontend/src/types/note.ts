@@ -14,6 +14,24 @@ export type Backlink = {
   updated_at: string;
 };
 
+export type GraphNode = {
+  id: string;
+  title: string;
+  tags: string[];
+  updated_at: string;
+  degree: number;
+};
+
+export type GraphEdge = {
+  source: string;
+  target: string;
+};
+
+export type KnowledgeGraph = {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+};
+
 export type NoteDraft = {
   title: string;
   content: string;

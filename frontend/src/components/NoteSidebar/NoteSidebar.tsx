@@ -6,11 +6,13 @@ type NoteSidebarProps = {
   selectedId: string | null;
   search: string;
   trash: boolean;
+  graph: boolean;
   loading: boolean;
   onSearchChange: (value: string) => void;
   onSelect: (note: Note) => void;
   onCreate: () => void;
   onToggleTrash: (trash: boolean) => void;
+  onOpenGraph: () => void;
   onOpenSettings: () => void;
 };
 
@@ -24,11 +26,13 @@ export function NoteSidebar({
   selectedId,
   search,
   trash,
+  graph,
   loading,
   onSearchChange,
   onSelect,
   onCreate,
   onToggleTrash,
+  onOpenGraph,
   onOpenSettings,
 }: NoteSidebarProps) {
   return (
@@ -47,17 +51,25 @@ export function NoteSidebar({
         className="note-sidebar__search"
         value={search}
         onChange={(event) => onSearchChange(event.target.value)}
-        placeholder="Search notes"
+        placeholder={graph ? "Use graph search" : "Search notes"}
         aria-label="Search notes"
+        disabled={graph}
       />
 
-      <nav className="note-sidebar__filters" aria-label="Note filters">
+      <nav className="note-sidebar__filters" aria-label="Cortex views">
         <button
-          className={`note-sidebar__filter${!trash ? " note-sidebar__filter--active" : ""}`}
+          className={`note-sidebar__filter${!trash && !graph ? " note-sidebar__filter--active" : ""}`}
           type="button"
           onClick={() => onToggleTrash(false)}
         >
           Notes
+        </button>
+        <button
+          className={`note-sidebar__filter${graph ? " note-sidebar__filter--active" : ""}`}
+          type="button"
+          onClick={onOpenGraph}
+        >
+          Graph
         </button>
         <button
           className={`note-sidebar__filter${trash ? " note-sidebar__filter--active" : ""}`}

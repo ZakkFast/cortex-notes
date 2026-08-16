@@ -4,11 +4,12 @@ import { ApiError } from "../../api/client";
 import { notesApi } from "../../api/notes";
 import { settingsApi } from "../../api/settings";
 import { BacklinksPanel } from "../../components/BacklinksPanel/BacklinksPanel";
+import { KnowledgeGraph } from "../../components/KnowledgeGraph/KnowledgeGraph";
 import { NoteEditor } from "../../components/NoteEditor/NoteEditor";
 import { NoteSidebar } from "../../components/NoteSidebar/NoteSidebar";
 import { SettingsModal } from "../../components/SettingsModal/SettingsModal";
 import { ToastViewport, type Toast } from "../../components/ToastViewport/ToastViewport";
-import type { Backlink, Note, NoteDraft, SaveState } from "../../types/note";
+import type { Backlink, KnowledgeGraph as KnowledgeGraphData, Note, NoteDraft, SaveState } from "../../types/note";
 import "./NotesPage.css";
 
 function toDraft(note: Note): NoteDraft {
@@ -24,9 +25,12 @@ export function NotesPage() {
   const [selected, setSelected] = useState<Note | null>(null);
   const [draft, setDraft] = useState<NoteDraft | null>(null);
   const [backlinks, setBacklinks] = useState<Backlink[]>([]);
+  const [graphData, setGraphData] = useState<KnowledgeGraphData>({ nodes: [], edges: [] });
   const [search, setSearch] = useState("");
   const [trash, setTrash] = useState(false);
+  const [graphOpen, setGraphOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [graphLoading, setGraphLoading] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [mode, setMode] = useState<"write" | "preview">("write");
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -65,6 +69,17 @@ export function NotesPage() {
     }
   }
 
+  async function loadGraph() {
+    setGraphLoading(true);
+    try {
+      setGraphData(await notesApi.graph());
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : "Cortex could not build the knowledge graph.", "error");
+    } finally {
+      setGraphLoading(false);
+    }
+  }
+
   useEffect(() => {
     settingsApi.get().then((settings) => {
       setAccentColor(settings.accent_color);
@@ -76,6 +91,10 @@ export function NotesPage() {
     const timer = window.setTimeout(() => void loadNotes(search, trash, true), 220);
     return () => window.clearTimeout(timer);
   }, [search, trash]);
+
+  useEffect(() => {
+    if (graphOpen) void loadGraph();
+  }, [graphOpen]);
 
   useEffect(() => {
     if (!selected || selected.deleted_at) {
@@ -124,6 +143,7 @@ export function NotesPage() {
   const noteCountLabel = useMemo(() => `${notes.length} ${notes.length === 1 ? "note" : "notes"}`, [notes.length]);
 
   function selectNote(note: Note) {
+    setGraphOpen(false);
     setSelected(note);
     setCurrentDraft(toDraft(note));
     lastSaved.current = snapshot(toDraft(note));
@@ -134,6 +154,7 @@ export function NotesPage() {
   async function createNote(title?: string) {
     try {
       const created = await notesApi.create(title ? { title } : {});
+      setGraphOpen(false);
       setTrash(false);
       setSearch("");
       setNotes((current) => [created, ...current]);
@@ -177,6 +198,17 @@ export function NotesPage() {
     }
   }
 
+  async function openGraphNode(noteId: string) {
+    try {
+      const note = await notesApi.get(noteId);
+      setSearch("");
+      setTrash(false);
+      selectNote(note);
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : "Cortex could not open that graph node.", "error");
+    }
+  }
+
   async function openWikiTitle(title: string) {
     const allNotes = search || trash ? await notesApi.list() : notes;
     const existing = allNotes.find((note) => note.title.toLocaleLowerCase() === title.toLocaleLowerCase());
@@ -209,20 +241,34 @@ export function NotesPage() {
         selectedId={selected?.id ?? null}
         search={search}
         trash={trash}
+        graph={graphOpen}
         loading={loading}
         onSearchChange={setSearch}
         onSelect={selectNote}
         onCreate={() => void createNote()}
         onToggleTrash={(nextTrash) => {
+          setGraphOpen(false);
           setTrash(nextTrash);
           setSearch("");
           setSelected(null);
           setCurrentDraft(null);
         }}
+        onOpenGraph={() => {
+          setGraphOpen(true);
+          setTrash(false);
+          setSearch("");
+        }}
         onOpenSettings={() => setSettingsOpen(true)}
       />
 
-      {selected && draft ? (
+      {graphOpen ? (
+        <KnowledgeGraph
+          graph={graphData}
+          loading={graphLoading}
+          onRefresh={() => void loadGraph()}
+          onOpenNote={(noteId) => void openGraphNode(noteId)}
+        />
+      ) : selected && draft ? (
         <>
           <NoteEditor
             draft={draft}
