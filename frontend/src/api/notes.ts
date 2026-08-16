@@ -1,5 +1,5 @@
 import { apiRequest } from "./client";
-import type { Backlink, Note, NoteDraft } from "../types/note";
+import type { Backlink, KnowledgeGraph, Note, NoteDraft } from "../types/note";
 
 export const notesApi = {
   list(search = "", trash = false) {
@@ -8,6 +8,14 @@ export const notesApi = {
     if (trash) params.set("trash", "true");
     const query = params.toString();
     return apiRequest<Note[]>(`/notes${query ? `?${query}` : ""}`);
+  },
+
+  get(noteId: string) {
+    return apiRequest<Note>(`/notes/${noteId}`);
+  },
+
+  graph() {
+    return apiRequest<KnowledgeGraph>("/notes/graph");
   },
 
   create(payload: Partial<NoteDraft> = {}) {
