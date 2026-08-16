@@ -5,7 +5,7 @@ from sqlalchemy import String, cast, delete, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models import Note, NoteLink
-from app.schemas import NoteCreate, NoteUpdate
+from app.schemas import GraphEdgeRead, GraphNodeRead, KnowledgeGraphRead, NoteCreate, NoteUpdate
 from app.utils.wiki_links import extract_wiki_links
 
 
@@ -30,6 +30,42 @@ def get_note(db: Session, note_id: str, include_deleted: bool = True) -> Note:
     if note is None or (not include_deleted and note.deleted_at is not None):
         raise HTTPException(status_code=404, detail="Note not found")
     return note
+
+
+def get_knowledge_graph(db: Session) -> KnowledgeGraphRead:
+    notes = list(db.scalars(select(Note).where(Note.deleted_at.is_(None)).order_by(func.lower(Note.title))).all())
+    notes_by_id = {note.id: note for note in notes}
+    notes_by_title = {note.title.casefold(): note for note in notes}
+    edge_pairs: set[tuple[str, str]] = set()
+
+    for source_id, target_title in db.execute(select(NoteLink.source_note_id, NoteLink.target_title)):
+        source = notes_by_id.get(source_id)
+        target = notes_by_title.get(target_title.casefold())
+        if source is None or target is None or source.id == target.id:
+            continue
+        edge_pairs.add((source.id, target.id))
+
+    degrees = {note.id: 0 for note in notes}
+    edges: list[GraphEdgeRead] = []
+    for source_id, target_id in sorted(
+        edge_pairs,
+        key=lambda pair: (notes_by_id[pair[0]].title.casefold(), notes_by_id[pair[1]].title.casefold()),
+    ):
+        degrees[source_id] += 1
+        degrees[target_id] += 1
+        edges.append(GraphEdgeRead(source=source_id, target=target_id))
+
+    nodes = [
+        GraphNodeRead(
+            id=note.id,
+            title=note.title,
+            tags=note.tags,
+            updated_at=note.updated_at,
+            degree=degrees[note.id],
+        )
+        for note in notes
+    ]
+    return KnowledgeGraphRead(nodes=nodes, edges=edges)
 
 
 def create_note(db: Session, payload: NoteCreate) -> Note:
