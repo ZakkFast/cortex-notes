@@ -44,11 +44,10 @@ def test_knowledge_graph_includes_active_resolved_links(client) -> None:
     assert response.status_code == 200
     graph = response.json()
     assert [node["title"] for node in graph["nodes"]] == ["Atlas", "Cortex"]
-    assert {node["title"]: node["degree"] for node in graph["nodes"]} == {"Atlas": 2, "Cortex": 2}
-    assert {(edge["source"], edge["target"]) for edge in graph["edges"]} == {
-        (atlas["id"], cortex["id"]),
-        (cortex["id"], atlas["id"]),
-    }
+    assert {node["title"]: node["degree"] for node in graph["nodes"]} == {"Atlas": 1, "Cortex": 1}
+    assert len(graph["edges"]) == 1
+    edge = graph["edges"][0]
+    assert {edge["source"], edge["target"]} == {atlas["id"], cortex["id"]}
 
 
 def test_settings_validate_and_persist_accent(client) -> None:
