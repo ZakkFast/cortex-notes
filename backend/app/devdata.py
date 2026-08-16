@@ -76,7 +76,6 @@ def build_seed_notes() -> list[NoteCreate]:
 
 
 def wipe_dev_data(db: Session) -> int:
-    count = db.scalar(select(Note).count()) if False else None
     note_count = len(db.scalars(select(Note.id)).all())
     db.execute(delete(NoteLink))
     db.execute(delete(Note))
