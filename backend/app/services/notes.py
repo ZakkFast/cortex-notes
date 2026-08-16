@@ -43,13 +43,13 @@ def get_knowledge_graph(db: Session) -> KnowledgeGraphRead:
         target = notes_by_title.get(target_title.casefold())
         if source is None or target is None or source.id == target.id:
             continue
-        edge_pairs.add((source.id, target.id))
+        edge_pairs.add(tuple(sorted((source.id, target.id))))
 
     degrees = {note.id: 0 for note in notes}
     edges: list[GraphEdgeRead] = []
     for source_id, target_id in sorted(
         edge_pairs,
-        key=lambda pair: (notes_by_id[pair[0]].title.casefold(), notes_by_id[pair[1]].title.casefold()),
+        key=lambda pair: tuple(sorted((notes_by_id[pair[0]].title.casefold(), notes_by_id[pair[1]].title.casefold()))),
     ):
         degrees[source_id] += 1
         degrees[target_id] += 1
