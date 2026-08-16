@@ -39,3 +39,8 @@ jobs:
       - uses: actions/checkout@v4
       - run: docker compose config --quiet
       - run: docker compose build
+      - run: docker compose up -d --wait
+      - run: curl --fail --silent --show-error http://127.0.0.1:3101/health
+      - run: curl --fail --silent --show-error http://127.0.0.1:3100/notes/ > /dev/null
+      - if: always()
+        run: docker compose down -v
