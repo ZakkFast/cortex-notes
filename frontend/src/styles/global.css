@@ -54,3 +54,15 @@ textarea:focus-visible {
 ::selection {
   background: var(--accent-soft);
 }
+
+@media (pointer: coarse) {
+  button,
+  input,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button {
+    touch-action: manipulation;
+  }
+}

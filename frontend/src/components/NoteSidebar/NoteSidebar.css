@@ -11,7 +11,14 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
+  gap: 12px;
   padding: 24px 20px 18px;
+}
+
+.note-sidebar__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .note-sidebar__eyebrow {
@@ -32,7 +39,8 @@
 
 .note-sidebar__new-button,
 .note-sidebar__settings-button,
-.note-sidebar__filter {
+.note-sidebar__filter,
+.note-sidebar__mobile-close {
   border: 1px solid var(--border);
   border-radius: 5px;
   background: transparent;
@@ -45,9 +53,15 @@
   font-size: 12px;
 }
 
+.note-sidebar__mobile-close {
+  display: none;
+  color: var(--text-muted);
+}
+
 .note-sidebar__new-button:hover:not(:disabled),
 .note-sidebar__settings-button:hover,
-.note-sidebar__filter:hover {
+.note-sidebar__filter:hover,
+.note-sidebar__mobile-close:hover {
   border-color: var(--border-strong);
   background: var(--surface-hover);
 }
@@ -164,4 +178,90 @@
   color: var(--text-muted);
   font-size: 12px;
   text-align: left;
+}
+
+@media (max-width: 800px) {
+  .note-sidebar {
+    position: fixed;
+    z-index: 50;
+    inset: 0 auto 0 0;
+    width: min(88vw, 340px);
+    height: 100dvh;
+    border-right: 1px solid var(--border-strong);
+    box-shadow: 18px 0 44px rgba(0, 0, 0, 0.36);
+    transform: translateX(-102%);
+    transition: transform 160ms ease;
+  }
+
+  .note-sidebar--mobile-open {
+    transform: translateX(0);
+  }
+
+  .note-sidebar__header {
+    align-items: center;
+    padding: max(16px, env(safe-area-inset-top)) 16px 14px;
+  }
+
+  .note-sidebar__brand {
+    font-size: 22px;
+  }
+
+  .note-sidebar__new-button,
+  .note-sidebar__mobile-close {
+    min-height: 40px;
+    padding: 0 10px;
+  }
+
+  .note-sidebar__mobile-close {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .note-sidebar__search {
+    width: calc(100% - 32px);
+    min-height: 44px;
+    margin: 0 16px 12px;
+    padding-inline: 12px;
+    font-size: 16px;
+  }
+
+  .note-sidebar__filters {
+    gap: 8px;
+    padding: 0 16px 12px;
+  }
+
+  .note-sidebar__filter {
+    min-height: 40px;
+    flex: 1;
+    padding-inline: 8px;
+    font-size: 13px;
+  }
+
+  .note-sidebar__list {
+    padding: 0 8px 12px;
+    overscroll-behavior: contain;
+  }
+
+  .note-sidebar__note {
+    min-height: 58px;
+    padding: 12px;
+  }
+
+  .note-sidebar__note-title {
+    font-size: 14px;
+  }
+
+  .note-sidebar__note-meta {
+    font-size: 11px;
+  }
+
+  .note-sidebar__footer {
+    padding: 12px 16px max(14px, env(safe-area-inset-bottom));
+  }
+
+  .note-sidebar__settings-button {
+    min-height: 44px;
+    padding-inline: 12px;
+    font-size: 13px;
+  }
 }

@@ -5,6 +5,7 @@ import { notesApi } from "../../api/notes";
 import { settingsApi } from "../../api/settings";
 import { BacklinksPanel } from "../../components/BacklinksPanel/BacklinksPanel";
 import { KnowledgeGraph } from "../../components/KnowledgeGraph/KnowledgeGraph";
+import { MobileHeader } from "../../components/MobileHeader/MobileHeader";
 import { NoteEditor } from "../../components/NoteEditor/NoteEditor";
 import { NoteSidebar } from "../../components/NoteSidebar/NoteSidebar";
 import { SettingsModal } from "../../components/SettingsModal/SettingsModal";
@@ -29,6 +30,8 @@ export function NotesPage() {
   const [search, setSearch] = useState("");
   const [trash, setTrash] = useState(false);
   const [graphOpen, setGraphOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [backlinksOpen, setBacklinksOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [graphLoading, setGraphLoading] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -141,6 +144,12 @@ export function NotesPage() {
 
   const selectedDeleted = Boolean(selected?.deleted_at);
   const noteCountLabel = useMemo(() => `${notes.length} ${notes.length === 1 ? "note" : "notes"}`, [notes.length]);
+  const mobileTitle = graphOpen ? "Knowledge Graph" : trash ? "Trash" : selected?.title ?? "Cortex";
+
+  function closeMobilePanels() {
+    setSidebarOpen(false);
+    setBacklinksOpen(false);
+  }
 
   function selectNote(note: Note) {
     setGraphOpen(false);
@@ -149,6 +158,7 @@ export function NotesPage() {
     lastSaved.current = snapshot(toDraft(note));
     setSaveState("idle");
     setMode("write");
+    closeMobilePanels();
   }
 
   async function createNote(title?: string) {
@@ -171,6 +181,7 @@ export function NotesPage() {
     try {
       await notesApi.remove(selected.id);
       addToast(`Moved "${selected.title}" to Trash.`);
+      setBacklinksOpen(false);
       setSelected(null);
       setCurrentDraft(null);
       await loadNotes(search, trash, false);
@@ -184,6 +195,7 @@ export function NotesPage() {
     try {
       const restored = await notesApi.restore(selected.id);
       addToast(`Restored "${restored.title}".`);
+      setBacklinksOpen(false);
       await loadNotes(search, true, false);
     } catch (error) {
       addToast(error instanceof Error ? error.message : "Cortex could not restore this note.", "error");
@@ -243,6 +255,7 @@ export function NotesPage() {
         trash={trash}
         graph={graphOpen}
         loading={loading}
+        mobileOpen={sidebarOpen}
         onSearchChange={setSearch}
         onSelect={selectNote}
         onCreate={() => void createNote()}
@@ -252,14 +265,38 @@ export function NotesPage() {
           setSearch("");
           setSelected(null);
           setCurrentDraft(null);
+          closeMobilePanels();
         }}
         onOpenGraph={() => {
           setGraphOpen(true);
           setTrash(false);
           setSearch("");
+          closeMobilePanels();
         }}
-        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenSettings={() => {
+          setSettingsOpen(true);
+          closeMobilePanels();
+        }}
+        onMobileClose={() => setSidebarOpen(false)}
       />
+
+      <MobileHeader
+        title={mobileTitle}
+        backlinkCount={backlinks.length}
+        showBacklinks={Boolean(selected && !selectedDeleted && !graphOpen)}
+        onOpenNavigation={() => {
+          setBacklinksOpen(false);
+          setSidebarOpen(true);
+        }}
+        onOpenBacklinks={() => {
+          setSidebarOpen(false);
+          setBacklinksOpen(true);
+        }}
+      />
+
+      {sidebarOpen || backlinksOpen ? (
+        <button className="notes-page__mobile-backdrop" type="button" aria-label="Close mobile panel" onClick={closeMobilePanels} />
+      ) : null}
 
       {graphOpen ? (
         <KnowledgeGraph
@@ -281,7 +318,12 @@ export function NotesPage() {
             onRestore={() => void restoreSelected()}
             onOpenWikiTitle={(title) => void openWikiTitle(title)}
           />
-          <BacklinksPanel backlinks={backlinks} onOpen={(noteId) => void openBacklink(noteId)} />
+          <BacklinksPanel
+            backlinks={backlinks}
+            mobileOpen={backlinksOpen}
+            onOpen={(noteId) => void openBacklink(noteId)}
+            onMobileClose={() => setBacklinksOpen(false)}
+          />
         </>
       ) : (
         <main className="notes-page__empty-state">

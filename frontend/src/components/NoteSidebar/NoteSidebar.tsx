@@ -8,12 +8,14 @@ type NoteSidebarProps = {
   trash: boolean;
   graph: boolean;
   loading: boolean;
+  mobileOpen: boolean;
   onSearchChange: (value: string) => void;
   onSelect: (note: Note) => void;
   onCreate: () => void;
   onToggleTrash: (trash: boolean) => void;
   onOpenGraph: () => void;
   onOpenSettings: () => void;
+  onMobileClose: () => void;
 };
 
 function formatUpdatedAt(value: string): string {
@@ -28,23 +30,30 @@ export function NoteSidebar({
   trash,
   graph,
   loading,
+  mobileOpen,
   onSearchChange,
   onSelect,
   onCreate,
   onToggleTrash,
   onOpenGraph,
   onOpenSettings,
+  onMobileClose,
 }: NoteSidebarProps) {
   return (
-    <aside className="note-sidebar">
+    <aside className={`note-sidebar${mobileOpen ? " note-sidebar--mobile-open" : ""}`}>
       <header className="note-sidebar__header">
         <div>
           <p className="note-sidebar__eyebrow">Knowledge</p>
           <h1 className="note-sidebar__brand">Cortex</h1>
         </div>
-        <button className="note-sidebar__new-button" type="button" onClick={onCreate} disabled={trash}>
-          New note
-        </button>
+        <div className="note-sidebar__header-actions">
+          <button className="note-sidebar__new-button" type="button" onClick={onCreate} disabled={trash}>
+            New note
+          </button>
+          <button className="note-sidebar__mobile-close" type="button" onClick={onMobileClose}>
+            Close
+          </button>
+        </div>
       </header>
 
       <input

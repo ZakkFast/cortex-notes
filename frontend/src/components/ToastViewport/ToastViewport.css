@@ -22,3 +22,16 @@
 .toast-viewport__toast--error {
   border-color: color-mix(in srgb, var(--danger) 55%, var(--border));
 }
+
+@media (max-width: 800px) {
+  .toast-viewport {
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    left: 12px;
+    width: auto;
+  }
+
+  .toast-viewport__toast {
+    font-size: 13px;
+  }
+}
