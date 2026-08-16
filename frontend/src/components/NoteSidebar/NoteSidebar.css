@@ -71,6 +71,11 @@
   color: var(--text-faint);
 }
 
+.note-sidebar__search:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
 .note-sidebar__filters {
   display: flex;
   gap: 6px;
