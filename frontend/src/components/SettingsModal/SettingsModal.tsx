@@ -6,7 +6,7 @@ const PRESETS = ["#8b9cff", "#66a6a6", "#b08a72", "#a17fb3", "#7d9b73", "#c17767
 type SettingsModalProps = {
   accentColor: string;
   onClose: () => void;
-  onSave: (accentColor: string) => Promise<void>;
+  onSave: (accentColor: string) => Promise<boolean>;
 };
 
 export function SettingsModal({ accentColor, onClose, onSave }: SettingsModalProps) {
@@ -16,8 +16,8 @@ export function SettingsModal({ accentColor, onClose, onSave }: SettingsModalPro
   async function handleSave() {
     setSaving(true);
     try {
-      await onSave(draftColor);
-      onClose();
+      const saved = await onSave(draftColor);
+      if (saved) onClose();
     } finally {
       setSaving(false);
     }
