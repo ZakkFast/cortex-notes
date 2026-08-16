@@ -1,0 +1,125 @@
+.notes-page {
+  display: grid;
+  grid-template-columns: 270px minmax(0, 1fr) 210px;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.notes-page__empty-state {
+  display: grid;
+  grid-column: 2 / 4;
+  place-items: center;
+  background: var(--background);
+}
+
+.notes-page__empty-inner {
+  max-width: 380px;
+  padding: 30px;
+  text-align: center;
+}
+
+.notes-page__empty-eyebrow {
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.notes-page__empty-inner h2 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 650;
+  letter-spacing: -0.04em;
+}
+
+.notes-page__empty-inner p:not(.notes-page__empty-eyebrow) {
+  margin: 10px 0 20px;
+  color: var(--text-faint);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.notes-page__empty-inner button {
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--border));
+  border-radius: 4px;
+  background: var(--accent-soft);
+  color: var(--text);
+  cursor: pointer;
+}
+
+@media (max-width: 1050px) {
+  .notes-page {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+
+  .backlinks-panel {
+    display: none;
+  }
+
+  .notes-page__empty-state {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 700px) {
+  body {
+    overflow: auto;
+  }
+
+  .notes-page {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .note-sidebar {
+    height: auto;
+    max-height: 42vh;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .note-editor {
+    min-height: 58vh;
+  }
+
+  .note-editor__header {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 16px 18px;
+  }
+
+  .note-editor__title {
+    width: 100%;
+  }
+
+  .note-editor__toolbar {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .note-editor__save {
+    margin-right: auto;
+    text-align: left;
+  }
+
+  .note-editor__tags-row {
+    padding-inline: 18px;
+  }
+
+  .note-editor__textarea,
+  .note-editor__preview {
+    min-height: 55vh;
+    padding: 24px 20px 60px;
+  }
+
+  .notes-page__empty-state {
+    grid-column: 1;
+    min-height: 58vh;
+  }
+}
